@@ -7,13 +7,9 @@
  *
  */
 THREE.Fire = function ( geometry, options ) {
-
 	THREE.Mesh.call( this, geometry );
-
 	this.type = 'Fire';
-
 	this.clock = new THREE.Clock();
-
 	options = options || {};
 
 	var textureWidth = options.textureWidth || 512;
@@ -212,63 +208,6 @@ THREE.Fire = function ( geometry, options ) {
 
 
 	/* 
-	* PROJECTION SHADER 1 
-	*/
-	// puts the Projection Shader 1 into 'shader'
-	shader = THREE.Fire.ProjectionShader1;
-	this.projMaterial1 = new THREE.ShaderMaterial( {
-		uniforms: shader.uniforms,
-		vertexShader: shader.vertexShader,
-		fragmentShader: shader.fragmentShader,
-		transparent: false
-	} );
-
-	this.projMaterial1.uniforms[ "oneOverWidth" ].value = oneOverWidth;
-	this.projMaterial1.uniforms[ "oneOverHeight" ].value = oneOverHeight;
-	// adds the projection shader 1 mesh into the scene
-	this.projMesh1 = new THREE.Mesh( this.fieldGeometry, this.projMaterial1 );
-	this.fieldScene.add( this.projMesh1 );
-
-
-	/* 
-	* PROJECTION SHADER 2 
-	*/
-	// puts the Projection Shader 2 into 'shader'
-	shader = THREE.Fire.ProjectionShader2;
-	this.projMaterial2 = new THREE.ShaderMaterial( {
-		uniforms: shader.uniforms,
-		vertexShader: shader.vertexShader,
-		fragmentShader: shader.fragmentShader,
-		transparent: false
-	} );
-
-	this.projMaterial2.uniforms[ "oneOverWidth" ].value = oneOverWidth;
-	this.projMaterial2.uniforms[ "oneOverHeight" ].value = oneOverHeight;
-	// adds the projection shader 2 into the scene
-	this.projMesh2 = new THREE.Mesh( this.fieldGeometry, this.projMaterial2 );
-	this.fieldScene.add( this.projMesh2 );
-
-
-	/* 
-	* PROJECTION SHADER 3
-	*/
-	// puts the Projection Shader 3 into 'shader'
-	shader = THREE.Fire.ProjectionShader3;
-	this.projMaterial3 = new THREE.ShaderMaterial( {
-		uniforms: shader.uniforms,
-		vertexShader: shader.vertexShader,
-		fragmentShader: shader.fragmentShader,
-		transparent: false
-	} );
-
-	this.projMaterial3.uniforms[ "oneOverWidth" ].value = oneOverWidth;
-	this.projMaterial3.uniforms[ "oneOverHeight" ].value = oneOverHeight;
-	// adds the projection shader 3 into the scene
-	this.projMesh3 = new THREE.Mesh( this.fieldGeometry, this.projMaterial3 );
-	this.fieldScene.add( this.projMesh3 );
-
-
-	/* 
 	* COLOR SHADER 
 	*/
 	if (debug) {
@@ -379,52 +318,7 @@ THREE.Fire = function ( geometry, options ) {
 
 		this.swapTextures();
 	};
-	// renders projection shaders
-	this.renderProject = function ( renderer ) {
-		// Projection pass 1
-
-		this.projMesh1.visible = true;
-
-		this.projMaterial1.uniforms[ "densityMap" ].value = this.field0.texture;
-
-		renderer.setRenderTarget( this.fieldProj );
-		renderer.render( this.fieldScene, this.orthoCamera );
-
-		this.projMesh1.visible = false;
-
-		this.projMaterial2.uniforms[ "densityMap" ].value = this.fieldProj.texture;
-
-		// Projection pass 2
-
-		this.projMesh2.visible = true;
-
-		for (var i = 0; i < 20; i++) {
-			renderer.setRenderTarget( this.field1 );
-			renderer.render( this.fieldScene, this.orthoCamera );
-
-			var temp = this.field1;
-			this.field1 = this.fieldProj;
-			this.fieldProj = temp;
-
-			this.projMaterial2.uniforms[ "densityMap" ].value = this.fieldProj.texture;
-		}
-
-		this.projMesh2.visible = false;
-
-		this.projMaterial3.uniforms[ "densityMap" ].value = this.field0.texture;
-		this.projMaterial3.uniforms[ "projMap" ].value = this.fieldProj.texture;
-
-		// Projection pass 3
-
-		this.projMesh3.visible = true;
-
-		renderer.setRenderTarget( this.field1 );
-		renderer.render( this.fieldScene, this.orthoCamera );
-
-		this.projMesh3.visible = false;
-
-		this.swapTextures();
-	};
+	
 
 	/*
 	* Handles drawing all the shaders
@@ -447,9 +341,6 @@ THREE.Fire = function ( geometry, options ) {
 		this.sourceMesh.visible = false;
 		this.diffuseMesh.visible = false;
 		this.driftMesh.visible = false;
-		this.projMesh1.visible = false;
-		this.projMesh2.visible = false;
-		this.projMesh3.visible = false;
 
 		// Without this there is nothing
 		this.renderSource( renderer );
@@ -465,12 +356,6 @@ THREE.Fire = function ( geometry, options ) {
 
 		// Handles movement of flame upwards
 		this.renderDrift( renderer );
-
-		// Off by default
-		if ( this.massConservation ) {
-			this.renderProject( renderer );
-			this.renderProject( renderer );
-		}
 
 		// Final result out for coloring
 		this.material.map = this.field1.texture;
@@ -743,193 +628,6 @@ THREE.Fire.DriftShader = {
 };
 
 
-// GLSL Projection Shader 1
-THREE.Fire.ProjectionShader1 = {
-	uniforms: {
-		'oneOverWidth': {
-			type: 'f',
-			value: null
-		},
-		'oneOverHeight': {
-			type: 'f',
-			value: null
-		},
-		'densityMap': {
-			type: 't',
-			value: null
-		}
-	},
-
-	vertexShader: [
-		'varying vec2 vUv;',
-
-		'void main() {',
-
-		' 	  vUv = uv;',
-
-		'     vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );',
-		'     gl_Position = projectionMatrix * mvPosition;',
-
-		'}'
-	].join( "\n" ),
-
-	fragmentShader: [
-		'uniform float oneOverWidth;',
-		'uniform float oneOverHeight;',
-		'uniform sampler2D densityMap;',
-
-		'varying vec2 vUv;',
-
-		'void main() {',
-		'    float dL = texture2D( densityMap, vec2(vUv.x - oneOverWidth, vUv.y) ).g;',
-		'    float dR = texture2D( densityMap, vec2(vUv.x + oneOverWidth, vUv.y) ).g;',
-		'    float dU = texture2D( densityMap, vec2(vUv.x, vUv.y - oneOverHeight) ).b;',
-		'    float dD = texture2D( densityMap, vec2(vUv.x, vUv.y + oneOverHeight) ).b;',
-
-		'    dL = (dL - step(0.5, dL)) * 2.0;',
-		'    dR = (dR - step(0.5, dR)) * 2.0;',
-		'    dU = (dU - step(0.5, dU)) * 2.0;',
-		'    dD = (dD - step(0.5, dD)) * 2.0;',
-
-		'    float h = (oneOverWidth + oneOverHeight) * 0.5;',
-		'    float div = -0.5 * h * (dR - dL + dD - dU);',
-
-		'    gl_FragColor = vec4( 0.0, 0.0, div * 0.5 + step(0.0, -div), 0.0);',
-
-		'}'
-	].join( "\n" )
-};
-
-
-// GLSL Projection Shader 2
-THREE.Fire.ProjectionShader2 = {
-	uniforms: {
-		'oneOverWidth': {
-			type: 'f',
-			value: null
-		},
-		'oneOverHeight': {
-			type: 'f',
-			value: null
-		},
-		'densityMap': {
-			type: 't',
-			value: null
-		}
-	},
-
-	vertexShader: [
-		'varying vec2 vUv;',
-
-		'void main() {',
-
-		' 	  vUv = uv;',
-
-		'     vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );',
-		'     gl_Position = projectionMatrix * mvPosition;',
-
-		'}'
-
-	].join( "\n" ),
-
-	fragmentShader: [
-		'uniform float oneOverWidth;',
-		'uniform float oneOverHeight;',
-		'uniform sampler2D densityMap;',
-
-		'varying vec2 vUv;',
-
-		'void main() {',
-		'    float div = texture2D( densityMap, vUv ).b;',
-		'    float pL = texture2D( densityMap, vec2(vUv.x - oneOverWidth, vUv.y) ).g;',
-		'    float pR = texture2D( densityMap, vec2(vUv.x + oneOverWidth, vUv.y) ).g;',
-		'    float pU = texture2D( densityMap, vec2(vUv.x, vUv.y - oneOverHeight) ).g;',
-		'    float pD = texture2D( densityMap, vec2(vUv.x, vUv.y + oneOverHeight) ).g;',
-
-		'    float divNorm = (div - step(0.5, div)) * 2.0;',
-		'    pL = (pL - step(0.5, pL)) * 2.0;',
-		'    pR = (pR - step(0.5, pR)) * 2.0;',
-		'    pU = (pU - step(0.5, pU)) * 2.0;',
-		'    pD = (pD - step(0.5, pD)) * 2.0;',
-
-		'    float p = (divNorm + pR + pL + pD + pU) * 0.25;',
-
-		'    gl_FragColor = vec4( 0.0, p * 0.5 + step(0.0, -p), div, 0.0);',
-
-		'}'
-	].join( "\n" )
-};
-
-
-// GLSL Projection Shader 3
-THREE.Fire.ProjectionShader3 = {
-	uniforms: {
-		'oneOverWidth': {
-			type: 'f',
-			value: null
-		},
-		'oneOverHeight': {
-			type: 'f',
-			value: null
-		},
-		'densityMap': {
-			type: 't',
-			value: null
-		},
-		'projMap': {
-			type: 't',
-			value: null
-		}
-	},
-
-	vertexShader: [
-		'varying vec2 vUv;',
-
-		'void main() {',
-
-		' 	  vUv = uv;',
-
-		'     vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );',
-		'     gl_Position = projectionMatrix * mvPosition;',
-
-		'}'
-	].join( "\n" ),
-
-	fragmentShader: [
-		'uniform float oneOverWidth;',
-		'uniform float oneOverHeight;',
-		'uniform sampler2D densityMap;',
-		'uniform sampler2D projMap;',
-
-		'varying vec2 vUv;',
-
-		'void main() {',
-		'    vec4 orig = texture2D(densityMap, vUv);',
-
-		'    float pL = texture2D( projMap, vec2(vUv.x - oneOverWidth, vUv.y) ).g;',
-		'    float pR = texture2D( projMap, vec2(vUv.x + oneOverWidth, vUv.y) ).g;',
-		'    float pU = texture2D( projMap, vec2(vUv.x, vUv.y - oneOverHeight) ).g;',
-		'    float pD = texture2D( projMap, vec2(vUv.x, vUv.y + oneOverHeight) ).g;',
-
-		'    float uNorm = (orig.g - step(0.5, orig.g)) * 2.0;',
-		'    float vNorm = (orig.b - step(0.5, orig.b)) * 2.0;',
-
-		'    pL = (pL - step(0.5, pL)) * 2.0;',
-		'    pR = (pR - step(0.5, pR)) * 2.0;',
-		'    pU = (pU - step(0.5, pU)) * 2.0;',
-		'    pD = (pD - step(0.5, pD)) * 2.0;',
-
-		'    float h = (oneOverWidth + oneOverHeight) * 0.5;',
-		'    float u = uNorm - (0.5 * (pR - pL) / h);',
-		'    float v = vNorm - (0.5 * (pD - pU) / h);',
-
-		'    gl_FragColor = vec4( orig.r, u * 0.5 + step(0.0, -u), v * 0.5 + step(0.0, -v), orig.a);',
-
-		'}'
-	].join( "\n" )
-};
-
-
 // GLSL Color Shader
 THREE.Fire.ColorShader = {
 	uniforms: {
@@ -1057,7 +755,42 @@ THREE.Fire.DebugShader = {
 // GLSL Debug Shader
 THREE.Fire.TestShader = {
 	uniforms: {
-
+		'oneOverWidth': {
+			type: 'f',
+			value: null
+		},
+		'oneOverHeight': {
+			type: 'f',
+			value: null
+		},
+		'diffuse': {
+			type: 'f',
+			value: null
+		},
+		'viscosity': {
+			type: 'f',
+			value: null
+		},
+		'expansion': {
+			type: 'f',
+			value: null
+		},
+		'swirl': {
+			type: 'f',
+			value: null
+		},
+		'drag': {
+			type: 'f',
+			value: null
+		},
+		'burnRate': {
+			type: 'f',
+			value: null
+		},
+		'densityMap': {
+			type: 't',
+			value: null
+		}
 	},
 
 	vertexShader: [
