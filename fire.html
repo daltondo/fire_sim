@@ -203,38 +203,14 @@
 					fire.addSource(1.0, 0.1, 0.1, 1.0, 0.0, 1.0);
 				}
 
-				// params.Text = function () {
-				// 	var text = "Three JS";
-				// 	var size = 180;
-				// 	var color = "#FF0040";
-				// 	var canvas = document.createElement( "canvas" );
-				// 	canvas.width = 1024;
-				// 	canvas.height = 1024;
-				// 	var context = canvas.getContext( "2d" );
-				// 	context.font = size + "pt Arial";
-				// 	context.strokeStyle = "black";
-				// 	context.strokeRect( 0, 0, canvas.width, canvas.height );
-				// 	context.textAlign = "center";
-				// 	context.textBaseline = "middle";
-				// 	context.lineWidth = 5;
-				// 	context.strokeStyle = color;
-				// 	context.fillStyle = "black";
-				// 	context.strokeText( text, canvas.width / 2, canvas.height * 0.75 );
-				// 	var texture = new THREE.Texture( canvas );
-				// 	texture.needsUpdate = true;
-				// 	fire.setSourceMap( texture );
-				// };
-
 				// Creates a new dat.gui where we can add configurations
 				var gui = new dat.GUI();
 
 				gui.add(params, "Single");
 				gui.add(params, "Full");
 				gui.add(params, "Pyrotechnics");
-				// gui.add(params, "Text" );
+
 				gui.addColor(params, 'background').onChange(updateBackground);
-
-
 				gui.addColor(params, 'color1').onChange(updateColor1);
 				gui.addColor(params, 'color2').onChange(updateColor2);
 				gui.addColor(params, 'color3').onChange(updateColor3);
@@ -250,7 +226,6 @@
 				gui.add( params, 'windX', - 5, 5 ).step( 0.01 ).onChange( updateWindX );
 				gui.add( params, 'windY', - 5, 5 ).step( 0.01 ).onChange( updateWindY );
 				gui.add( params, 'speed', 0, 1000 ).onChange( updateSpeed );
-				// gui.add( params, 'massConservation' ).onChange( updateMassConservation );
 
 				function updateAll() {
 					updateColor1(params.color1);
