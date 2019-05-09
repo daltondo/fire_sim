@@ -37,7 +37,7 @@
 	<body>
 
 		<div id="info">
-			<a href="https://threejs.org" target="_blank" rel="noopener noreferrer">three.js</a> fire and smoke demo <br/>
+			2d navier-stokes fire simulation <br/>
 		</div>
 
 		<div id="overlay">
@@ -168,12 +168,40 @@
 					fire.clearSources();
 					fire.addSource(0.5, 0.1, 0.1, 1.0, 0.0, 1.0);
 				};
-				// Adds 2 fire sources to the screen
-				params.Multiple = function () {
+				// Adds many fire sources to the screen
+				params.Full = function () {
 					fire.clearSources();
-					fire.addSource(0.45, 0.1, 0.1, 0.5, 0.0, 1.0);
-					fire.addSource(0.55, 0.1, 0.1, 0.5, 0.0, 1.0);
+					fire.addSource(0.5, 0.1, 0.1, 1.0, 0.0, 1.0);
+
+					fire.addSource(0.25, 0.1, 0.1, 1.0, 0.0, 1.0);
+					fire.addSource(0.75, 0.1, 0.1, 1.0, 0.0, 1.0);
+					fire.addSource(0.0, 0.1, 0.1, 1.0, 0.0, 1.0);
+					fire.addSource(1.0, 0.1, 0.1, 1.0, 0.0, 1.0);
 				};
+				params.Pyrotechnics = function () {
+					fire.clearSources();
+					fire.addSource(0.5, 0.1, 0.1, 1.0, 0.0, 1.0);
+					setTimeout(pyro1, 700);
+				};
+				pyro1 = function() {
+					fire.clearSources();
+					fire.addSource(0.25, 0.1, 0.1, 1.0, 0.0, 1.0);
+					fire.addSource(0.75, 0.1, 0.1, 1.0, 0.0, 1.0);
+					setTimeout(pyro2, 700);
+				}
+				pyro2 = function() {
+					fire.clearSources();
+					fire.addSource(0.0, 0.1, 0.1, 1.0, 0.0, 1.0);
+					fire.addSource(1.0, 0.1, 0.1, 1.0, 0.0, 1.0);
+					setTimeout(pyro3, 700);
+				}
+				pyro3 = function() {
+					fire.addSource(0.0, 0.1, 0.1, 1.0, 0.0, 1.0);
+					fire.addSource(0.25, 0.1, 0.1, 1.0, 0.0, 1.0);
+					fire.addSource(0.5, 0.1, 0.1, 1.0, 0.0, 1.0);
+					fire.addSource(0.75, 0.1, 0.1, 1.0, 0.0, 1.0);
+					fire.addSource(1.0, 0.1, 0.1, 1.0, 0.0, 1.0);
+				}
 
 				// params.Text = function () {
 				// 	var text = "Three JS";
@@ -201,7 +229,8 @@
 				var gui = new dat.GUI();
 
 				gui.add(params, "Single");
-				gui.add(params, "Multiple");
+				gui.add(params, "Full");
+				gui.add(params, "Pyrotechnics");
 				// gui.add(params, "Text" );
 				gui.addColor(params, 'background').onChange(updateBackground);
 
@@ -292,7 +321,7 @@
 
 				params.Campfire = function () {
 					params.color1 = 0xffffff;
-					params.color2 = 0xffa000;
+					params.color2 = 0xff5a00;
 					params.color3 = 0x000000;
 					params.windX = 0.0;
 					params.windY = 0.75;
@@ -393,6 +422,27 @@
 					updateAll();
 				};
 				gui.add(params, 'Cigar');
+
+
+				params.CartoonFlame = function () {
+					params.color1 = 0xffffff;
+					params.color2 = 0xffa000;
+					params.color3 = 0xf51313;
+					params.windX = 0.0;
+					params.windY = 0.75;
+					params.colorBias = 0.26;
+					params.burnRate = 5.07;
+					params.diffuse = 1.33;
+					params.viscosity = 0.69;
+					params.expansion = - 0.01;
+					params.swirl = 50;
+					params.drag = 0.37;
+					params.airSpeed = 13.0;
+					params.speed = 280.0;
+					params.massConservation = false;
+					updateAll();
+				};
+				gui.add(params, 'CartoonFlame');
 
 
 				gui.open();

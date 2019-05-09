@@ -35,6 +35,7 @@ THREE.Fire = function ( geometry, options ) {
 	this.massConservation = ( options.massConservation === undefined ) ? false : options.massConservation;
 
 	var size = textureWidth * textureHeight;
+	// Computational grid that moves around the fluid
 	this.sourceData = new Uint8Array( 4 * size );
 
 
@@ -227,6 +228,23 @@ THREE.Fire = function ( geometry, options ) {
 
 	this.material.uniforms[ "densityMap" ].value = this.field1.texture;
 
+	/*
+	* TEST SHADER
+	*/
+	/* TODO: 1. Instantiate the test shader here */
+	shader = THREE.Fire.TestShader;
+	this.testMaterial = new THREE.ShaderMaterial( {
+		uniforms: shader.uniforms,
+		vertexShader: shader.vertexShader,
+		fragmentShader: shader.fragmentShader,
+		transparent: false
+	} );
+
+	this.testMaterial.uniforms[ "oneOverWidth" ].value = oneOverWidth;
+	this.testMaterial.uniforms[ "oneOverHeight" ].value = oneOverHeight;
+	// adds the test mesh into the scene
+	this.testMesh = new THREE.Mesh( this.fieldGeometry, this.testMaterial );
+	this.fieldScene.add( this.testMesh );
 
 	// sets the uniforms for all the shaders
 	// key = uniform name
@@ -245,6 +263,9 @@ THREE.Fire = function ( geometry, options ) {
 		this.material.uniforms[ "color2" ].value = this.color2;
 		this.material.uniforms[ "color3" ].value = this.color3;
 		this.material.uniforms[ "colorBias" ].value = this.colorBias;
+
+		this.testMaterial.uniforms[ "windVector" ].value = this.windVector;
+		this.testMaterial.uniforms[ "airSpeed" ].value = dt * this.airSpeed * 0.001 * textureHeight;
 	};
 
 	/*
@@ -279,7 +300,10 @@ THREE.Fire = function ( geometry, options ) {
 		renderer.antialias = this.savedAntialias;
 		renderer.toneMapping = this.savedToneMapping;
 	};
-	// renders source shader
+
+	/*
+	* Renders source shader
+	*/
 	this.renderSource = function ( renderer ) {
 		this.sourceMesh.visible = true;
 
@@ -292,7 +316,9 @@ THREE.Fire = function ( geometry, options ) {
 
 		this.swapTextures();
 	};
-	// renders diffuse shaders
+	/*
+	* Renders diffuse shader
+	*/
 	this.renderDiffuse = function ( renderer ) {
 		this.diffuseMesh.visible = true;
 
@@ -305,7 +331,9 @@ THREE.Fire = function ( geometry, options ) {
 
 		this.swapTextures();
 	};
-	// renders drift shaders
+	/*
+	* Renders drift shader
+	*/
 	this.renderDrift = function ( renderer ) {
 		this.driftMesh.visible = true;
 
@@ -318,7 +346,22 @@ THREE.Fire = function ( geometry, options ) {
 
 		this.swapTextures();
 	};
-	
+	/* TODO: 2. Render the test shader here */
+	/*
+	* Renders test shader
+	*/
+	this.renderTest = function ( renderer ) {
+		this.testMesh.visible = true;
+
+		this.testMaterial.uniforms[ "densityMap" ].value = this.field0.texture;
+
+		renderer.setRenderTarget( this.field1 );
+		renderer.render( this.fieldScene, this.orthoCamera );
+
+		this.testMesh.visible = false;
+
+		this.swapTextures();
+	};
 
 	/*
 	* Handles drawing all the shaders
@@ -341,13 +384,15 @@ THREE.Fire = function ( geometry, options ) {
 		this.sourceMesh.visible = false;
 		this.diffuseMesh.visible = false;
 		this.driftMesh.visible = false;
+		/* TODO: 3. Add the test mesh here */
+		this.testMesh.visible = false;
 
-		// Without this there is nothing
+		// Renders the initial density source
 		this.renderSource( renderer );
 
 		this.clearDiffuse();
-		// Layers on diffuse shaders
-		for ( var i = 0; i < 21; i ++ ) {
+		// Layers on diffuse shaders - diffusion through each cell
+		for ( var i = 0; i < 5; i ++ ) {
 			this.renderDiffuse( renderer );
 		}
 		this.configShaders( dt );
@@ -356,6 +401,9 @@ THREE.Fire = function ( geometry, options ) {
 
 		// Handles movement of flame upwards
 		this.renderDrift( renderer );
+
+		/* TODO: 4. Render the test shader */
+		// this.renderTest( renderer );
 
 		// Final result out for coloring
 		this.material.map = this.field1.texture;
@@ -372,7 +420,9 @@ THREE.Fire.prototype = Object.create(THREE.Mesh.prototype);
 THREE.Fire.prototype.constructor = THREE.Fire;
 
 
-// GLSL Source Shader
+/*
+* GLSL Source Shader
+*/
 THREE.Fire.SourceShader = {
 	uniforms: {
 		'sourceMap': {
@@ -429,7 +479,9 @@ THREE.Fire.SourceShader = {
 };
 
 
-// GLSL Diffuse Shader
+/* 
+* GLSL Diffuse Shader 
+*/
 THREE.Fire.DiffuseShader = {
 	uniforms: {
 		'oneOverWidth': {
@@ -545,7 +597,9 @@ THREE.Fire.DiffuseShader = {
 };
 
 
-// GLSL Drift Shader
+/*
+* GLSL Drift Shader
+*/
 THREE.Fire.DriftShader = {
 	uniforms: {
 		'oneOverWidth': {
@@ -628,7 +682,9 @@ THREE.Fire.DriftShader = {
 };
 
 
-// GLSL Color Shader
+/*
+* GLSL Color Shader
+*/
 THREE.Fire.ColorShader = {
 	uniforms: {
 		'color1': {
@@ -690,7 +746,9 @@ THREE.Fire.ColorShader = {
 };
 
 
-// GLSL Debug Shader
+/*
+* GLSL Debug Shader
+*/
 THREE.Fire.DebugShader = {
 	uniforms: {
 		'color1': {
@@ -752,7 +810,10 @@ THREE.Fire.DebugShader = {
 	].join( "\n" )
 };
 
-// GLSL Debug Shader
+
+/*
+* GLSL Test Shader
+*/
 THREE.Fire.TestShader = {
 	uniforms: {
 		'oneOverWidth': {
@@ -763,41 +824,113 @@ THREE.Fire.TestShader = {
 			type: 'f',
 			value: null
 		},
-		'diffuse': {
-			type: 'f',
-			value: null
+		'windVector': {
+			type: 'v2',
+			value: new THREE.Vector2( 0.0, 0.0 )
 		},
-		'viscosity': {
-			type: 'f',
-			value: null
-		},
-		'expansion': {
-			type: 'f',
-			value: null
-		},
-		'swirl': {
-			type: 'f',
-			value: null
-		},
-		'drag': {
-			type: 'f',
-			value: null
-		},
-		'burnRate': {
+		'airSpeed': {
 			type: 'f',
 			value: null
 		},
 		'densityMap': {
 			type: 't',
 			value: null
-		}
+		},
+
+		// Add new uniforms here
+		'colLight': {
+			type: 'v3',
+			value: new THREE.Vector3( 0.0, 0.0, 0.0 )
+		},
+		'colNormal': {
+			type: 'v3',
+			value: new THREE.Vector3( 0.0, 0.0, 0.0 )
+		},
+		'colDark': {
+			type: 'v3',
+			value: new THREE.Vector3( 0.0, 0.0, 0.0 )
+		},
+		'colLight': {
+			type: 'f',
+			value: 0
+		},
 	},
 
 	vertexShader: [
+		'varying vec2 vUv;',
+		'varying float noise;',
+		'uniform vec3 colLight;',
+		'uniform vec3 colNormal;',
+		'uniform vec3 colDark;',
+		'uniform float opacity;',
 
+		'vec3 blend( vec3 cola, vec3 colb, float percent ) {',
+		'  return vec3(',
+		'    cola.r + (colb.r - cola.r) * percent,',
+		'    cola.g + (colb.g - cola.g) * percent,',
+		'    cola.b + (colb.b - cola.b) * percent',
+		'  );',
+		'}',
+
+		'void main() {',
+		// ' 	  vUv = uv;',
+
+		// '     vec3 col;',
+		// '     float range = 1.0 * noise;',
+		// '  	  if(range > .6) col = colDark;',
+		// '  	  else if(range > .4) col = blend(colNormal, colDark, (range - .4) / .2);',
+		// '  	  else col = blend(colLight, colNormal, range / .4);',
+
+		// '  	  gl_FragColor = vec4( col, opacity );',
+
+		/* Drift vertex shader */
+		' 	  vUv = uv;',
+
+		'     vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );',
+		'     gl_Position = projectionMatrix * mvPosition;',
+		'}'
 	].join( "\n" ),
 
 	fragmentShader: [
+		'uniform float oneOverWidth;',
+		'uniform float oneOverHeight;',
+		'uniform vec2 windVector;',
+		'uniform float airSpeed;',
+		'uniform sampler2D densityMap;',
 
+		'varying vec2 vUv;',
+
+		'void main() {',
+		'    vec2 velocity = texture2D( densityMap, vUv ).gb;',
+		'    velocity = (velocity - step(0.5, velocity)) * 2.0;',
+
+		'    velocity = velocity + windVector;',
+
+		'    vec2 sourcePos = vUv - airSpeed * vec2(oneOverWidth, oneOverHeight) * velocity;',
+
+		'    vec2 units = sourcePos / vec2(oneOverWidth, oneOverHeight);',
+
+		'    vec2 intPos = floor(units);',
+		'    vec2 frac = units - intPos;',
+		'    intPos = intPos * vec2(oneOverWidth, oneOverHeight);',
+
+		'    vec4 dX0Y0 = texture2D( densityMap, intPos + vec2(0.0, -oneOverHeight) );',
+		'    vec4 dX1Y0 = texture2D( densityMap, intPos + vec2(oneOverWidth, 0.0) );',
+		'    vec4 dX0Y1 = texture2D( densityMap, intPos + vec2(0.0, oneOverHeight) );',
+		'    vec4 dX1Y1 = texture2D( densityMap, intPos + vec2(oneOverWidth, oneOverHeight) );',
+
+
+		'    dX0Y0.gb = (dX0Y0.gb - step(0.5, dX0Y0.gb)) * 2.0;',
+		'    dX1Y0.gb = (dX1Y0.gb - step(0.5, dX1Y0.gb)) * 2.0;',
+		'    dX0Y1.gb = (dX0Y1.gb - step(0.5, dX0Y1.gb)) * 2.0;',
+		'    dX1Y1.gb = (dX1Y1.gb - step(0.5, dX1Y1.gb)) * 2.0;',
+
+		'    vec4 source = mix(mix(dX0Y0, dX1Y0, frac.x), mix(dX0Y1, dX1Y1, frac.x), frac.y);',
+
+		'    source.gb = source.gb * 0.5 + step(0.0, -source.gb);',
+
+		'    gl_FragColor = source;',
+
+		'}'
 	].join( "\n" )
 };
