@@ -51,7 +51,7 @@
 				document.body.appendChild(WEBGL.getWebGLErrorMessage());
 			}
 
-			var camera, scene, renderer, stats, fire;
+			var camera, scene, renderer, stats, fire, backgroundPlane, sound, audioLoader, spongebobPlane, patrickPlane;
 
 			// Initial parameters
 			var params = {
@@ -91,6 +91,9 @@
 				camera.add(pointLight);
 				scene.add(camera);
 
+				// Init sound
+				sound = null;
+
 				// Init fire
 				var plane = new THREE.PlaneBufferGeometry(20, 20);
 				fire = new THREE.Fire(plane, {
@@ -100,27 +103,6 @@
 				} );
 				fire.position.z = -2;
 				scene.add(fire);
-
-				// Create Background Plane and Layer Image on Top of it.
-				var geometry = new THREE.PlaneGeometry( 10, 10, 10);
-
-        var planeMaterials =
-       [
-         new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('img/logfire.png'), color: 0xa6cfe2, side: THREE.DoubleSide,
-				 side: THREE.DoubleSide,
-				 transparent: true,
-				 opacity: 1,
-				 depthWrite: false}),
-         new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('img/logfire.png'), side: THREE.DoubleSide})
-       ];
-       // Create a material, color, or image texture
-
-       var plane = new THREE.Mesh(geometry, planeMaterials);
-       scene.add(plane);
-
-       plane.position.y = -9;
-			 plane.position.z = -2;
-
 
 				// Init renderer
 				renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
@@ -190,10 +172,13 @@
 					fire.addSource(0.5, 0.1, 0.1, 1.0, 0.0, 1.0);
 				};
 				// Adds many fire sources to the screen
-				params.Full = function () {
+				params.Multiple = function () {
 					fire.clearSources();
-					fire.addSource(0.5, 0.1, 0.1, 1.0, 0.0, 1.0);
+					scene.remove(backgroundPlane);
+					scene.remove(spongebobPlane);
+					scene.remove(patrickPlane);
 
+					fire.addSource(0.5, 0.1, 0.1, 1.0, 0.0, 1.0);
 					fire.addSource(0.25, 0.1, 0.1, 1.0, 0.0, 1.0);
 					fire.addSource(0.75, 0.1, 0.1, 1.0, 0.0, 1.0);
 					fire.addSource(0.0, 0.1, 0.1, 1.0, 0.0, 1.0);
@@ -201,6 +186,10 @@
 				};
 				params.Pyrotechnics = function () {
 					fire.clearSources();
+					scene.remove(backgroundPlane);
+					scene.remove(spongebobPlane);
+					scene.remove(patrickPlane);
+
 					fire.addSource(0.5, 0.1, 0.1, 1.0, 0.0, 1.0);
 					setTimeout(pyro1, 700);
 				};
@@ -217,36 +206,18 @@
 					setTimeout(pyro3, 700);
 				}
 				pyro3 = function() {
-					fire.addSource(0.0, 0.1, 0.1, 1.0, 0.0, 1.0);
+					fire.clearSources();
 					fire.addSource(0.25, 0.1, 0.1, 1.0, 0.0, 1.0);
 					fire.addSource(0.5, 0.1, 0.1, 1.0, 0.0, 1.0);
 					fire.addSource(0.75, 0.1, 0.1, 1.0, 0.0, 1.0);
-					fire.addSource(1.0, 0.1, 0.1, 1.0, 0.0, 1.0);
 				}
 
 				// Creates a new dat.gui where we can add configurations
-				var gui = new dat.GUI();
+				var gui = new dat.GUI({name: "Controls"});
 
 				gui.add(params, "Single");
-				gui.add(params, "Full");
+				gui.add(params, "Multiple");
 				gui.add(params, "Pyrotechnics");
-
-				gui.addColor(params, 'background').onChange(updateBackground);
-				gui.addColor(params, 'color1').onChange(updateColor1);
-				gui.addColor(params, 'color2').onChange(updateColor2);
-				gui.addColor(params, 'color3').onChange(updateColor3);
-
-				gui.add( params, 'colorBias', 0.0, 1.0 ).onChange( updateColorBias );
-				gui.add( params, 'burnRate', 0.0, 10.0 ).onChange( updateBurnRate );
-				gui.add( params, 'diffuse', 0.0, 5.0 ).step( 0.01 ).onChange( updateDiffuse );
-				gui.add( params, 'viscosity', 0.0, 5.0 ).step( 0.01 ).onChange( updateViscosity );
-				gui.add( params, 'expansion', - 1.0, 1.0 ).step( 0.01 ).onChange( updateExpansion );
-				gui.add( params, 'swirl', 0.0, 50.0 ).step( 0.01 ).onChange( updateSwirl );
-				gui.add( params, 'drag', 0.0, 1.0 ).onChange( updateDrag );
-				gui.add( params, 'airSpeed', 0.0, 50.0 ).onChange( updateAirSpeed );
-				gui.add( params, 'windX', - 5, 5 ).step( 0.01 ).onChange( updateWindX );
-				gui.add( params, 'windY', - 5, 5 ).step( 0.01 ).onChange( updateWindY );
-				gui.add( params, 'speed', 0, 1000 ).onChange( updateSpeed );
 
 				function updateAll() {
 					updateColor1(params.color1);
@@ -273,7 +244,234 @@
 				}
 
 
+				params.Campfire = function () {
+					// Play sound
+					var listener = new THREE.AudioListener();
+					camera.add(listener);
+					// create a global audio source
+					if (sound != null && typeof sound != 'undefined') {
+						sound.stop();
+					}
+					sound = new THREE.Audio(listener);
+					// load a sound and set it as the Audio object's buffer
+					audioLoader = new THREE.AudioLoader();
+					audioLoader.load('sounds/campfire_normal.mp3', function( buffer ) {
+						sound.setBuffer( buffer );
+						sound.setLoop( false );
+						sound.setVolume( 0.5 );
+						sound.play();
+					});
+
+					params.color1 = 0xffffff;
+					params.color2 = 0xff5a00;
+					params.color3 = 0xfaec16;
+					params.windX = 0.0;
+					params.windY = 0.75;
+					params.colorBias = 0.8;
+					params.burnRate = 0.3;
+					params.diffuse = 1.33;
+					params.viscosity = 0.25;
+					params.expansion = 0.4;
+					params.swirl = 50.0;
+					params.drag = 0.35;
+					params.airSpeed = 12.0;
+					params.speed = 500.0;
+					params.massConservation = false;
+
+					/* Create Background Plane and Layer Image on Top of it. */
+					scene.remove(backgroundPlane);
+					scene.remove(spongebobPlane);
+					scene.remove(patrickPlane);
+					var geometry = new THREE.PlaneGeometry(10, 10, 10);
+
+			        var planeMaterials = [
+			        	new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('img/logfire.png'), color: 0xa6cfe2, side: THREE.DoubleSide,
+							side: THREE.DoubleSide,
+							transparent: true,
+							opacity: 1,
+							depthWrite: false}),
+			        	new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('img/logfire.png'), side: THREE.DoubleSide})
+			       	];
+			       	// Create a material, color, or image texture
+			       	backgroundPlane = new THREE.Mesh(geometry, planeMaterials);
+			       	scene.add(backgroundPlane);
+			       	backgroundPlane.position.y = -9;
+				 	backgroundPlane.position.z = -2;
+
+					updateAll();
+				};
+				gui.add(params, 'Campfire');
+
+
+				params.CampfireRemix = function () {
+					// Play sound
+					var listener = new THREE.AudioListener();
+					camera.add(listener);
+					// create a global audio source
+					if (sound != null && typeof sound != 'undefined') {
+						sound.stop();
+					}
+					sound = new THREE.Audio(listener);
+					// load a sound and set it as the Audio object's buffer
+					audioLoader = new THREE.AudioLoader();
+					audioLoader.load('sounds/campfire_spongebob.mp3', function( buffer ) {
+						sound.setBuffer( buffer );
+						sound.setLoop( false );
+						sound.setVolume( 0.5 );
+						sound.play();
+					});
+
+					params.color1 = 0xe8f24a;
+					params.color2 = 0xff7800;
+					params.color3 = 0xff2d00;
+					params.windX = 0.0;
+					params.windY = 0.75;
+					params.colorBias = 0.8;
+					params.burnRate = 0.3;
+					params.diffuse = 1.33;
+					params.viscosity = 0.25;
+					params.expansion = 0.4;
+					params.swirl = 50.0;
+					params.drag = 0.35;
+					params.airSpeed = 12.0;
+					params.speed = 500.0;
+					params.massConservation = false;
+
+					/* Create Background Plane and Layer Image on Top of it. */
+					scene.remove(backgroundPlane);
+					scene.remove(spongebobPlane);
+					scene.remove(patrickPlane);
+
+					var geometry = new THREE.PlaneGeometry(10, 10, 10);
+
+			        var planeMaterials = [
+			        	new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('img/logfire.png'), color: 0xa6cfe2, side: THREE.DoubleSide,
+							side: THREE.DoubleSide,
+							transparent: true,
+							opacity: 1,
+							depthWrite: false}),
+			        	new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('img/logfire.png'), side: THREE.DoubleSide})
+			       	];
+			       	// Create a material, color, or image texture
+			       	backgroundPlane = new THREE.Mesh(geometry, planeMaterials);
+			       	scene.add(backgroundPlane);
+			       	backgroundPlane.position.y = -9;
+				 	backgroundPlane.position.z = -2;
+
+				 	/* Add in Spongebob */
+				 	var spongebobGeometry = new THREE.PlaneGeometry(10, 10, 10);
+				 	var spongebobMaterials = [
+			        	new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('img/spongebob.png'), color: 0xa6cfe2, side: THREE.DoubleSide,
+							side: THREE.DoubleSide,
+							transparent: true,
+							opacity: 1,
+							depthWrite: false}),
+			        	new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('img/spongebob.png'), side: THREE.DoubleSide})
+			       	];
+			       	spongebobPlane = new THREE.Mesh(spongebobGeometry, spongebobMaterials);
+			       	scene.add(spongebobPlane);
+			       	spongebobPlane.position.x = -12;
+			       	spongebobPlane.position.y = -5;
+				 	spongebobPlane.position.z = -2;
+
+				 	/* Add in Patrick Star */
+				 	var patrickGeometry = new THREE.PlaneGeometry(10, 10, 10);
+				 	var patrickMaterials = [
+			        	new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('img/patrick.png'), color: 0xa6cfe2, side: THREE.DoubleSide,
+							side: THREE.DoubleSide,
+							transparent: true,
+							opacity: 1,
+							depthWrite: false}),
+			        	new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('img/patrick.png'), side: THREE.DoubleSide})
+			       	];
+			       	patrickPlane = new THREE.Mesh(patrickGeometry, patrickMaterials);
+			       	scene.add(patrickPlane);
+			       	patrickPlane.position.x = 10;
+			       	patrickPlane.position.y = -5;
+				 	patrickPlane.position.z = -2;
+
+					updateAll();
+				};
+				gui.add(params, 'CampfireRemix');
+
+
+				params.HumanTorch = function () {
+					// Play sound
+					var listener = new THREE.AudioListener();
+					camera.add(listener);
+					// create a global audio source
+					if (sound != null && typeof sound != 'undefined') {
+						sound.stop();
+					}
+					sound = new THREE.Audio(listener);
+					// load a sound and set it as the Audio object's buffer
+					audioLoader = new THREE.AudioLoader();
+					audioLoader.load('sounds/flame_on.m4a', function( buffer ) {
+						sound.setBuffer( buffer );
+						sound.setLoop( false );
+						sound.setVolume( 0.5 );
+						sound.play();
+					});
+
+					params.color1 = 0xffdcaa;
+					params.color2 = 0xffa000;
+					params.color3 = 0x000000;
+					params.windX = -0.49;
+					params.windY = 0.75;
+					params.colorBias = 0.9;
+					params.burnRate = 1.0;
+					params.diffuse = 1.33;
+					params.viscosity = 0.25;
+					params.expansion = 0.0;
+					params.swirl = 50.0;
+					params.drag = 0.35;
+					params.airSpeed = 10.0;
+					params.speed = 500.0;
+					params.massConservation = false;
+
+					scene.remove(backgroundPlane);
+					scene.remove(spongebobPlane);
+					scene.remove(patrickPlane);
+
+					var geometry = new THREE.PlaneGeometry(27, 25, 25);
+			        var planeMaterials = [
+			        	new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('img/torch.png'), color: 0xa6cfe2, side: THREE.DoubleSide,
+							side: THREE.DoubleSide,
+							transparent: true,
+							opacity: 1,
+							depthWrite: false}),
+			        	new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('img/torch.png'), side: THREE.DoubleSide})
+			       	];
+			       	// Create a material, color, or image texture
+			       	backgroundPlane = new THREE.Mesh(geometry, planeMaterials);
+			       	scene.add(backgroundPlane);
+			       	backgroundPlane.position.x = 11;
+			       	backgroundPlane.position.y = -7;
+				 	backgroundPlane.position.z = -3;
+
+					updateAll();
+				};
+				gui.add(params, 'HumanTorch');
+
+
 				params.Candle = function () {
+					// Play sound
+					var listener = new THREE.AudioListener();
+					camera.add(listener);
+					// create a global audio source
+					if (sound != null && typeof sound != 'undefined') {
+						sound.stop();
+					}
+					sound = new THREE.Audio(listener);
+					// load a sound and set it as the Audio object's buffer
+					audioLoader = new THREE.AudioLoader();
+					audioLoader.load('sounds/silent_night.mp3', function( buffer ) {
+						sound.setBuffer( buffer );
+						sound.setLoop( false );
+						sound.setVolume( 0.5 );
+						sound.play();
+					});
+
 					params.color1 = 0xffffff;
 					params.color2 = 0xffa000;
 					params.color3 = 0x000000;
@@ -289,102 +487,57 @@
 					params.airSpeed = 8.0;
 					params.speed = 500.0;
 					params.massConservation = false;
+
+					scene.remove(backgroundPlane);
+					scene.remove(spongebobPlane);
+					scene.remove(patrickPlane);
+
+					var geometry = new THREE.PlaneGeometry(10, 10, 10);
+
+			        var planeMaterials = [
+			        	new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('img/candle.png'), color: 0xa6cfe2, side: THREE.DoubleSide,
+							side: THREE.DoubleSide,
+							transparent: true,
+							opacity: 1,
+							depthWrite: false}),
+			        	new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('img/candle.png'), side: THREE.DoubleSide})
+			       	];
+			       	// Create a material, color, or image texture
+			       	backgroundPlane = new THREE.Mesh(geometry, planeMaterials);
+			       	scene.add(backgroundPlane);
+			       	backgroundPlane.position.x = 1;
+			       	backgroundPlane.position.y = -12;
+				 	backgroundPlane.position.z = -2;
+
 					updateAll();
 				};
 				gui.add(params, 'Candle');
 
 
-				params.Torch = function () {
-					params.color1 = 0xffdcaa;
-					params.color2 = 0xffa000;
-					params.color3 = 0x000000;
-					params.windX = 0.0;
-					params.windY = 0.75;
-					params.colorBias = 0.9;
-					params.burnRate = 1.0;
-					params.diffuse = 1.33;
-					params.viscosity = 0.25;
-					params.expansion = 0.0;
-					params.swirl = 50.0;
-					params.drag = 0.35;
-					params.airSpeed = 10.0;
-					params.speed = 500.0;
-					params.massConservation = false;
-					updateAll();
-				};
-				gui.add(params, 'Torch');
+				params.Volcano = function () {
+					// Play sound
+					var listener = new THREE.AudioListener();
+					camera.add(listener);
+					// create a global audio source
+					if (sound != null && typeof sound != 'undefined') {
+						sound.stop();
+					}
+					sound = new THREE.Audio(listener);
+					// load a sound and set it as the Audio object's buffer
+					audioLoader = new THREE.AudioLoader();
+					audioLoader.load('sounds/pompeii.mp3', function( buffer ) {
+						sound.setBuffer( buffer );
+						sound.setLoop( false );
+						sound.setVolume( 0.5 );
+						sound.play();
+					});
 
-
-				params.Campfire = function () {
-					params.color1 = 0xffffff;
-					params.color2 = 0xff5a00;
-					params.color3 = 0x000000;
-					params.windX = 0.0;
-					params.windY = 0.75;
-					params.colorBias = 0.8;
-					params.burnRate = 0.3;
-					params.diffuse = 1.33;
-					params.viscosity = 0.25;
-					params.expansion = - 0.25;
-					params.swirl = 50.0;
-					params.drag = 0.35;
-					params.airSpeed = 12.0;
-					params.speed = 500.0;
-					params.massConservation = false;
-					updateAll();
-				};
-				gui.add(params, 'Campfire');
-
-
-				params.Fireball = function () {
-					params.color1 = 0xffffff;
-					params.color2 = 0xffa000;
-					params.color3 = 0x000000;
-					params.windX = 0.0;
-					params.windY = 0.75;
-					params.colorBias = 0.8;
-					params.burnRate = 1.2;
-					params.diffuse = 3.0;
-					params.viscosity = 0.0;
-					params.expansion = 0.0;
-					params.swirl = 6.0;
-					params.drag = 0.0;
-					params.airSpeed = 20.0;
-					params.speed = 500.0;
-					params.massConservation = false;
-					updateAll();
-				};
-				gui.add(params, 'Fireball');
-
-
-				// params.Iceball = function () {
-				// 	params.color1 = 0x00bdf7;
-				// 	params.color2 = 0x1b3fb6;
-				// 	params.color3 = 0x001869;
-				// 	params.windX = 0.0;
-				// 	params.windY = - 0.25;
-				// 	params.colorBias = 0.25;
-				// 	params.burnRate = 2.6;
-				// 	params.diffuse = 5.0;
-				// 	params.viscosity = 0.5;
-				// 	params.expansion = 0.75;
-				// 	params.swirl = 30.0;
-				// 	params.drag = 0.0;
-				// 	params.airSpeed = 40.0;
-				// 	params.speed = 500.0;
-				// 	params.massConservation = false;
-				// 	updateAll();
-				// };
-				// gui.add(params, 'Iceball');
-
-
-				params.Smoke = function () {
-					params.color1 = 0xd2d2d2;
-					params.color2 = 0xd7d7d7;
+					params.color1 = 0xc3c3c3;
+					params.color2 = 0x595959;
 					params.color3 = 0x000000;
 					params.windX = - 0.05;
 					params.windY = 0.15;
-					params.colorBias = 0.95;
+					params.colorBias = 0.0;
 					params.burnRate = 0.0;
 					params.diffuse = 1.5;
 					params.viscosity = 0.25;
@@ -394,12 +547,51 @@
 					params.airSpeed = 18.0;
 					params.speed = 500.0;
 					params.massConservation = false;
+
+					scene.remove(backgroundPlane);
+					scene.remove(spongebobPlane);
+					scene.remove(patrickPlane);
+
+					var geometry = new THREE.PlaneGeometry(10, 10, 10);
+
+			        var planeMaterials = [
+			        	new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('img/volcano.png'), color: 0xa6cfe2, side: THREE.DoubleSide,
+							side: THREE.DoubleSide,
+							transparent: true,
+							opacity: 1,
+							depthWrite: false}),
+			        	new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('img/volcano.png'), side: THREE.DoubleSide})
+			       	];
+			       	// Create a material, color, or image texture
+			       	backgroundPlane = new THREE.Mesh(geometry, planeMaterials);
+			       	scene.add(backgroundPlane);
+			       	backgroundPlane.position.x = -1;
+			       	backgroundPlane.position.y = -14;
+				 	backgroundPlane.position.z = -2;
+
 					updateAll();
 				};
-				gui.add(params, 'Smoke');
+				gui.add(params, 'Volcano');
 
 
-				params.Cigar = function () {
+				params.Cigarette = function () {
+					// Play sound
+					var listener = new THREE.AudioListener();
+					camera.add(listener);
+					// create a global audio source
+					if (sound != null && typeof sound != 'undefined') {
+						sound.stop();
+					}
+					sound = new THREE.Audio(listener);
+					// load a sound and set it as the Audio object's buffer
+					audioLoader = new THREE.AudioLoader();
+					audioLoader.load('sounds/cigarette.mp3', function( buffer ) {
+						sound.setBuffer( buffer );
+						sound.setLoop( false );
+						sound.setVolume( 0.5 );
+						sound.play();
+					});
+
 					params.color1 = 0xc5c5c5;
 					params.color2 = 0x787878;
 					params.color3 = 0x000000;
@@ -415,16 +607,55 @@
 					params.airSpeed = 6.0;
 					params.speed = 500.0;
 					params.massConservation = false;
+
+					scene.remove(backgroundPlane);
+					scene.remove(spongebobPlane);
+					scene.remove(patrickPlane);
+
+					var geometry = new THREE.PlaneGeometry(10, 5, 10);
+
+			        var planeMaterials = [
+			        	new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('img/cigar.png'), color: 0xa6cfe2, side: THREE.DoubleSide,
+							side: THREE.DoubleSide,
+							transparent: true,
+							opacity: 1,
+							depthWrite: false}),
+			        	new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('img/cigar.png'), side: THREE.DoubleSide})
+			       	];
+			       	// Create a material, color, or image texture
+			       	backgroundPlane = new THREE.Mesh(geometry, planeMaterials);
+			       	scene.add(backgroundPlane);
+			       	backgroundPlane.position.x = 5;
+			       	backgroundPlane.position.y = -8;
+				 	backgroundPlane.position.z = -2;
+
 					updateAll();
 				};
-				gui.add(params, 'Cigar');
+				gui.add(params, 'Cigarette');
 
 
 				params.CartoonFlame = function () {
+					// Play sound
+					var listener = new THREE.AudioListener();
+					camera.add(listener);
+					// create a global audio source
+					if (sound != null && typeof sound != 'undefined') {
+						sound.stop();
+					}
+					sound = new THREE.Audio(listener);
+					// load a sound and set it as the Audio object's buffer
+					audioLoader = new THREE.AudioLoader();
+					audioLoader.load('sounds/charizardcry.mp3', function( buffer ) {
+						sound.setBuffer( buffer );
+						sound.setLoop( false );
+						sound.setVolume( 0.5 );
+						sound.play();
+					});
+
 					params.color1 = 0xffffff;
 					params.color2 = 0xffa000;
 					params.color3 = 0xf51313;
-					params.windX = 0.0;
+					params.windX = 0.29;
 					params.windY = 0.75;
 					params.colorBias = 0.26;
 					params.burnRate = 5.07;
@@ -436,9 +667,48 @@
 					params.airSpeed = 13.0;
 					params.speed = 280.0;
 					params.massConservation = false;
+
+					scene.remove(backgroundPlane);
+					scene.remove(spongebobPlane);
+					scene.remove(patrickPlane);
+
+					var geometry = new THREE.PlaneGeometry(20, 20, 20);
+
+			        var planeMaterials = [
+			        	new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('img/charzard.png'), color: 0xa6cfe2, side: THREE.DoubleSide,
+							side: THREE.DoubleSide,
+							transparent: true,
+							opacity: 1,
+							depthWrite: false}),
+			        	new THREE.MeshBasicMaterial({map: new THREE.TextureLoader().load('img/charzard.png'), side: THREE.DoubleSide})
+			       	];
+			       	// Create a material, color, or image texture
+			       	backgroundPlane = new THREE.Mesh(geometry, planeMaterials);
+			       	scene.add(backgroundPlane);
+			       	backgroundPlane.position.x = -8;
+			       	backgroundPlane.position.y = -5;
+				 	backgroundPlane.position.z = -2;
+
 					updateAll();
 				};
 				gui.add(params, 'CartoonFlame');
+
+				gui.addColor(params, 'background').onChange(updateBackground);
+				gui.addColor(params, 'color1').onChange(updateColor1);
+				gui.addColor(params, 'color2').onChange(updateColor2);
+				gui.addColor(params, 'color3').onChange(updateColor3);
+
+				gui.add( params, 'colorBias', 0.0, 1.0 ).onChange( updateColorBias );
+				gui.add( params, 'burnRate', 0.0, 10.0 ).onChange( updateBurnRate );
+				gui.add( params, 'diffuse', 0.0, 5.0 ).step( 0.01 ).onChange( updateDiffuse );
+				gui.add( params, 'viscosity', 0.0, 5.0 ).step( 0.01 ).onChange( updateViscosity );
+				gui.add( params, 'expansion', - 1.0, 1.0 ).step( 0.01 ).onChange( updateExpansion );
+				gui.add( params, 'swirl', 0.0, 50.0 ).step( 0.01 ).onChange( updateSwirl );
+				gui.add( params, 'drag', 0.0, 1.0 ).onChange( updateDrag );
+				gui.add( params, 'airSpeed', 0.0, 50.0 ).onChange( updateAirSpeed );
+				gui.add( params, 'windX', - 5, 5 ).step( 0.01 ).onChange( updateWindX );
+				gui.add( params, 'windY', - 5, 5 ).step( 0.01 ).onChange( updateWindY );
+				gui.add( params, 'speed', 0, 1000 ).onChange( updateSpeed );
 
 
 				gui.open();
