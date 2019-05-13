@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <style>
+            h1 {
+                font-family: "Century Gothic", CenturyGothic, AppleGothic, sans-serif; font-size: 64px; font-style: normal; font-variant: normal; font-weight: 700; line-height: 26.4px; text-align: center;
+            }
+            h2 {
+                font-family: "Century Gothic", CenturyGothic, AppleGothic, sans-serif; font-size: 32px; font-style: normal; font-variant: normal; font-weight: 700; line-height: 26.4px; text-align: center;
+            }
+            h3 {
+                font-family: "Century Gothic", CenturyGothic, AppleGothic, sans-serif; font-size: 28px; font-style: normal; font-variant: normal; font-weight: 700; line-height: 26.4px; text-align: center;
+            }
+            h4 {
+                font-family: "Century Gothic", CenturyGothic, AppleGothic, sans-serif; font-size: 20px; font-style: normal; font-variant: normal; font-weight: 700; line-height: 26.4px; text-align: center;
+            }
+            p {
+                font-size: 15px;
+            }
+            #leftimg {
+                float: right;
+                width: 300px;
+                padding-left: 15px;
+                padding-bottom: 10px;
+            }
+        </style>
+    </head>
+
+    <body>
+        <h1>Fire Simulation using Navier-Stokes</h1>
+        <h2>CS 184 Spring 2019 Final Project</h2>
+        <h3>Julian Cervantes, Dalton Do, and Ayush Maganahalli</h3>
+        <h4>May 14, 2019</h4>
+
+        <h2>Abstract</h2>
+            <p>We investigate the simulation of fire via virtual simulation using two-dimensional Navier-Stokes equations in order to have the fire emulate a fluid. We host our simulation on a local server 
+                and use three.js and WebGL to present the fire and simulate the physics of Navier-Stokes on the aforementioned server. With these technologies, we are able to change the first according to 
+                many physical principles present in the Naiver-Stokes equation, such as viscosity, air speed, burn rate, and swirl. Additionally, our project is able to present and adapt the fire to a range 
+                of multiple situations, such as using the fire to emulate a volcano’s lava and heat or emulating the smoke produced by a cigarette.</p>
+
+        <h2>Introduction and Overview</h2>
+            <img id="leftimg" src="../unityfireset.jpg">
+            <p>The initial proposal for our project was to simulate a fire. This topic was chosen due to the abundant presence of fire within video games and general effects in other medium like movies. Looking
+                at some pictures to the right, we can see that virtual fire simulations are a very needed component in video games, especially in fantasy-like settings, where the fire is coming from a source
+                not found in reality. As a result, since some of the members in the project are interested in game development, we thought it would be an interesting task to simulate a fire from what we learned
+                in the class. Therefore, our original plan was to dedicate the first two weeks to learning OpenGL and try to apply whatever physics we would need (which we would later learn would be primarily
+                Navier-Stokes) in OpenGL. From there, we would dedicate the next week to being able to render the fire and add shaders, colors, or whatever else was necessary to bring to life a basic fire
+                rendering. The last week would then be dedicated to cleaning up our code and presentation, while also making our rendering more complex if possible.</p>
+
+            <p>Our plans soon changed, however, as we struggled with the implementation of OpenGL and translating our desired physics (i.e. Navier-Stokes) to code. Therefore, after a week and a half, we updated
+                our plan to instead be based on WebGL and three.js, while focusing on a fluid simulation (e.g. water) instead of fire. We felt that this would reduce the burden of the work we had to do, while
+                still being similar to the initial project we had set out on and all the work we had accomplished up until that point. Within a couple days, though, we were much more ahead of schedule than we
+                had planned, and that allowed us to transition back into the fire simulation that we had aimed for in the beginning, using all the skills we had acquired in our attempts at a fluid simulation.
+                As a result, we created our final fire simulation in the last week and a half, eventually leading the final product, in which we were also able to change scenarios and the physical representation
+                of our fire in an adequate manner in WebGL.</p>
+
+        <h2>Technical Aspects</h2>
+            <h3>General Approach</h3>
+
+            <h3>Algorithms and Equations</h3>
+
+            <h3>Problems</h3>
+                <p>We faced a couple of problems along the way. The first major problem we ran into was our inclusion of OpenGL in our project. It took us nearly a week to understand how to use OpenGL and 
+                    we still struggled heavily with simply using and understanding OpenGL enough to employ basic physics principles like Navier-Stokes. We ended up resolving this issue by using three.js and
+                    WebGL as an alternative. WebGL as a simpler software was easier for us to understand, especially when it came to our shader implementation. This also turned out for the better since 
+                    once we included three.js, we realized that it would be difficult to include a particle-like fire simulation, so many of the perks of using OpenGL instead of WebGL (like geometry shaders
+                    and 3D textures) became redundant to us.</p>
+
+                <p>The next major problem we ran into was creating the fire itself. Despite many of the papers we referenced referring to Navier-Stokes as the method by which we could simulate the fire
+                    we struggled a lot with making the fire seem realistic. We resolved this in the aforementioned manner of treating the fire like a liquid and having the base be a circular like object.
+                    Clearly, in real life, most fires are not simple circular objects or have a static base, instead moving around in a random-like manner. As a result, we decided to simplify our implementation
+                    to look similar to some simulations we had seen (see ___________-, linked below), where the base has a static amount of base "liquid" or "fire" come up and which we can use to produce the
+                    remaining fire and fluid-like smoke using Navier-Stokes. 
+                    
+                    This also avoids the heavier requirements of having implementations of bitmaps and applying vector fields to each and every particle that could be produced by our fire (as referenced 
+                    in ______). We attempted these at some point in our last week but ran into issues almost immediately and so decided to drop it in order to turn in our project on time.</p>
+
+                <p>Outside of those two, we didn't really run into any major issues with our project but there were certain things that we were unable to accomplish due to the difficulty of implementing them.
+                    As mentioned above, we were unable to implement a particle-based fire setup but along with that we weren't able to fully implement a 3D setup for our fire. While three.js allowed us a lot
+                    of flexibility using the scene and camera setup built into it, we were unable to build a functioning 3D Navier-Stokes equation in WebGL and so decided to instead simplify our approach back to the 2D
+                    Navier-Stokes where we could make larger improvements and make a more realistic fire that could be adapted to different situations. On top of that, we were unable to allow our shader to
+                    naturally transition colors (i.e. how a fire naturally goes from a red/orange or blue flame at the base to the eventual black smoke at the top). However, we didn't find many simulations that
+                    were able to do that and instead somewhat brute forced the method by including multiple shaders. We chose to stay with 3 shaders in order to have a clean transition between colors without
+                    introducing too many shaders that might slow down our rendering. In the future, we could potentially look into reducing the number of shaders required, especially if there are some changes
+                    in the software we use.</p>
+
+            <h3>Lessons</h3>
+                <p></p>
+
+        <h2>Results</h2>
+            <p>Below, we can see an example of how we can influence the physics in the simulation using the GUI we built. We're able to adjust whatever aspect of the Navier-Stokes equation or the physical
+                situation we'd like by increasing or decreasing our desired value via the sliders. Certain values in the GUI are specific to how the flame (or smoke/other materials depending on what we want to
+                simulate) will move. For example, when we toggle our viscosity, we can see that our flame is signficantly wider or narrower and looks like it is burning more rapdily, respectively. Our expansion
+                factor has a similar effect, changing how large our flame will be (i.e. how tall it can grow). On the other hand, we have other values that allow us to change the presentation of our flame (e.g. 
+                color). Values like color bias allow us to change how much color saturation will remain from the origin of the flame at the base and how much is left at the top, depending on what colors are set.
+                Other values like burn rate also contribute to this and how much our flame burns dictates how much of the primary color of the flame will continue upwards in our simulation. Here's an example
+                of the toggles below:</p>
+
+            <p>Additionally, included are some specific built in scenarios that allow us to easily transition between different sets of values and colors so that the fire can be represented in multiple ways.
+                This feature was included to show the versatility of our simulation and that it can be generalized to multiple situations depending on what's needed. Each of these can be achieved by setting 
+                the sliders to certain values (and as a result, we can include many more built-in scenarios), but they give us a great reference point to what is possible with our Navier-Stokes fire simulation:</p>
+
+        <h2>References</h2>
+            <a href="https://github.com/PavelDoGreat/WebGL-Fluid-Simulation">Splat-based Fluid Simulation using Navier-Stokes</a> <br>
+            <a href="https://github.com/evanw/webgl-water">Water in Cube Simulation</a> <br>
+            <a href="http://web.cse.ohio-state.edu/~parent.1/classes/888/Au09/Final/WeiL.pdf">Ohio State Paper on Fire Simulation</a> <br>
+            <a href="https://www.doc.ic.ac.uk/~dfg/graphics/GraphicsLecture17.pdf">Imperial College of London Paper on Particle Fire Simulation</a> <br>
+            <a href="https://github.com/Ryanjmeek/CS384G_Final">Smoke, Fire, and Explosion Simulations</a> <br>
+            <a href="http://jamie-wong.com/2016/08/05/webgl-fluid-simulation/">Basic 2D Fluid Simulation using Navier-Stokes</a> <br>
+            <a href="https://github.com/piellardj/navier-stokes-webgl">Navier-Stokes Fluid Simulation with Obstacles</a>
+
+        <h2>Contributions</h2>
+            <p><b><u>Julian Cervantes:</u></b> Provided a majority of our research on the topics and finding examples for us to learn fluid and fire simulation through. Created a lot of the final presentation
+                and coding aspects used in our final project (especially the incorporation of GUI and how we changed our display for the project, both for scenarios and physical variables).</p>
+
+            <p><b><u>Dalton Do:</u></b> Leader of the group, who helped manage a lot of the major coding in both three.js and WebGL as well as contributing a lot to planning the project. 
+                Was able to translate the physics to the desired WebGL format and produced the basis of the eventual look for the final project (both in WebGL physics and three.js rendering of the fire).</p>
+
+            <p><b><u>Ayush Maganahalli:</u></b> Completed most of the work in both of the videos presented through the course of the project (the checkpoint and final videos). Helped contribute to the
+                incorportation of the physics in the WebGL and general understanding of the physics for the members of the group. Provided general understanding of three.js software.</p>
+
+            <p><b><u>TAs:</u></b> Thank you to all the TAs who helped us with our project and throughout the semester! Special shoutout to Vivien, Jose, and ____ for helping us with the class and being our
+                go-to TAs!</p>
+
+            <p><b><u>Professors</u></b> Lastly, thank you to Professors Ragan-Kelly and Ren for all the work they put in this semester and having such a great final presentation system! We had a lot of fun 
+                with our project and it was a great time presenting to you. We are extremely grateful for all the encouragement and guidance you've given us this semester, both for our project and 
+                future endeavors in graphics!</p>
+    </body>
+</html>
